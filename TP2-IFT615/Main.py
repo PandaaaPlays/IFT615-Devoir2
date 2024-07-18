@@ -16,10 +16,17 @@ class OBJECT(Fact):
     def set_location(self, location):
         self.location = location
 
+class CARGO(OBJECT):
+    def __init__(self, name):
+        super().__init__(name)
+        self.destination = None
+    def set_destination(self, destination):
+        self.destination = destination
+
 class ROCKET(OBJECT):
     def __init__(self, name):
         super().__init__(name)
-        self.has_fuel = None
+        self.has_fuel = False
     def set_has_fuel(self, has_fuel):
         self.has_fuel = has_fuel
 def read_lines(file_path):
@@ -32,6 +39,10 @@ def read_lines(file_path):
             lines.append(line)
     return lines
 
+def find_fact(list, name):
+    for fact in list:
+        if fact.name == name:
+            return fact
 
 def graphplan(r_ops_file, r_facts_file):
     # Read all lines from each file until an empty line or EOF is encountered
@@ -48,16 +59,46 @@ def graphplan(r_ops_file, r_facts_file):
             case 'PLACE':
                 facts.append(PLACE(name))
             case 'CARGO':
-                facts.append(OBJECT(name))
+                facts.append(CARGO(name))
             case 'ROCKET':
                 facts.append(ROCKET(name))
-        print(facts[counter].name)
         counter += 1
 
+    counter +=1
 
-    # Print the lines read for demonstration purposes
+    while file_facts[counter].split()[0] != '(effects':
+        parts = file_facts[counter].split()
+        argument = parts[0].strip('()')
+        if(argument == 'at'):
+            object = find_fact(facts, parts[1])
+            place = find_fact(facts, parts[2].strip('()'))
+            object.set_location(place)
+        if(argument == 'has-fuel'):
+            rocket = find_fact(facts, parts[1].strip('()'))
+            rocket.set_has_fuel(True)
+        counter +=1
+
+    counter += 1
+
+    while counter < len(file_facts):
+        print(file_facts[counter])
+        parts = file_facts[counter].split()
+        cargo = find_fact(facts, parts[1].strip('()'))
+        place = find_fact(facts, parts[2].strip('()'))
+        cargo.set_destination(place)
+        counter += 1
+
     print("Operators:", file_operators)
-    print("Facts:", file_facts)
+    print("Facts:")
+    for fact in facts:
+        print("Name: " + fact.name)
+        if isinstance(fact, OBJECT):
+            print("Location: " + fact.location.name)
+        if isinstance(fact, ROCKET):
+            print("Has fuel: " + str(fact.has_fuel))
+        if isinstance(fact, CARGO):
+            print("Destination: " + fact.destination.name)
+
 
     # Implement your Graphplan logic here
 
