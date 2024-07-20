@@ -1,4 +1,5 @@
 import argparse
+import re
 
 class Fact:
     def __init__(self, name):
@@ -28,6 +29,20 @@ class ROCKET(OBJECT):
         self.has_fuel = False
     def set_has_fuel(self, has_fuel):
         self.has_fuel = has_fuel
+
+class Operator:
+    def __init__(self, name):
+        self.name = name
+        self.params = []
+        self.preconds = []
+        self.effects =[]
+
+    def add_param(self, param):
+        self.params.append(param)
+    def add_precond(self, precond):
+        self.preconds.append(precond)
+    def add_effect(self, effect):
+        self.effects.append(effect)
 
 def read_lines(file_path):
     lines = []
@@ -81,14 +96,45 @@ def graphplan(r_ops_file, r_facts_file):
     counter += 1
 
     while counter < len(file_facts):
-        print(file_facts[counter])
         parts = file_facts[counter].split()
         cargo = find_fact(facts, parts[1].strip('()'))
         place = find_fact(facts, parts[2].strip('()'))
         cargo.set_destination(place)
         counter += 1
 
-    print("Operators:", file_operators)
+    counter = 0
+    operators = []
+    while counter < len(file_operators):
+        counter += 1; #skip la ligne operator
+        op = Operator(file_operators[counter])
+        counter += 2
+        parts = re.findall(r'\([^)]*\)', file_operators[counter])
+        for args in parts:
+            op.add_param(args)
+        counter += 2
+        parts = re.findall(r'\([^)]*\)', file_operators[counter])
+        for args in parts:
+            op.add_precond(args)
+        counter += 2
+        parts = re.findall(r'\([^)]*\)', file_operators[counter])
+        for args in parts:
+            op.add_effect(args)
+        counter += 1
+        operators.append(op)
+
+
+    print("Operators:")
+    for op in operators:
+        print("Name: " + op.name)
+        print("Params:")
+        for param in op.params:
+            print(param)
+        print("Preconds:")
+        for precond in op.preconds:
+            print(precond)
+        print("effects:")
+        for effect in op.effects:
+            print(effect)
     print("Facts:")
     for fact in facts:
         print("Name: " + fact.name)
