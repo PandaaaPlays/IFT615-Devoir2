@@ -83,15 +83,7 @@ def find_in_list(list, name):
             return fact
     raise ValueError(f"{name} not found in the list")
 
-def get_class_by_name(name):
-    return globals()[name]
 
-def find_with_type(list, type_str):
-    type_class = get_class_by_name(type_str.upper())
-    for fact in list:
-        if isinstance(fact, type_class):
-            return fact
-    raise ValueError(f"{type_str} not found in the list")
 def find_with_variable(list, variable):
     for var in list:
         if var.variable.name == variable:
@@ -280,24 +272,90 @@ def graphplan(r_ops_file, r_facts_file):
         #if isinstance(fact, CARGO):
          #   print("Destination: " + fact.destination.name)
 
-    params_list = [find_in_list(facts, 'alex'), find_in_list(facts, 'r1'), find_in_list(facts, 'London')]
-    handle_operation(find_in_list(operators, 'LOAD'), params_list, facts)
-    print(params_list[1].cargo.name)
-    print(params_list[0].location)
-    handle_operation(find_in_list(operators, 'UNLOAD'), params_list, facts)
-    print(params_list[0].location.name)
-    print(params_list[1].cargo)
-    handle_operation(find_in_list(operators, 'LOAD'), params_list, facts)
-    params_list = [find_in_list(facts, 'r1'), find_in_list(facts, 'London'), find_in_list(facts, 'Paris')]
-    handle_operation(find_in_list(operators, 'MOVE'), params_list, facts)
-    print(params_list[0].location.name)
-    print(params_list[0].cargo.name)
-    print(params_list[0].cargo.location)
-    params_list = [find_in_list(facts, 'alex'), find_in_list(facts, 'r1'), find_in_list(facts, 'Paris')]
-    handle_operation(find_in_list(operators, 'UNLOAD'), params_list, facts)
-    print(params_list[0].location.name)
-    optimal_plan = []
-    return optimal_plan
+    return DoPlan(operators, facts)
+
+def DoPlan(operators, facts):
+    # Implement the Graphplan algorithm to find the optimal plan
+    # 1. Initialize the planning graph with initial facts
+    # 2. Expand the graph by alternating between action and fact layers
+    # 3. Check for goal reachability and extract the plan
+
+    initial_state = set(facts)
+    # Create a list of goals as (cargo, destination) tuples
+    goals = [(fact, fact.destination) for fact in facts if isinstance(fact, CARGO) and fact.destination]
+    for goal in goals:
+        print(goal)
+
+    plan = []
+    planning_graph = []
+    planning_graph.append(initial_state)
+    print("Planning graph:")
+    print(planning_graph)
+
+    # While goals are not satisfied
+    while not goals_satisfied(goals, planning_graph[-1]):
+        # Create action layer
+        action_layer = create_action_layer(planning_graph[-1], operators)
+        print("action_layer:")
+        print(action_layer)
+        planning_graph.append(action_layer)
+
+        # Create fact layer
+        fact_layer = create_fact_layer(action_layer)
+        print("fact_layer:")
+        print(fact_layer)
+        planning_graph.append(fact_layer)
+
+    # Extract plan from the planning graph
+    plan = extract_plan(planning_graph, goals, operators)
+    return plan
+
+def goals_satisfied(goals, state):
+    # Check if all goals are satisfied in the current state
+    for cargo, destination in goals:
+        if cargo.location != destination:
+            return False
+    return True
+
+def create_action_layer(state, operators):
+    # Create an action layer based on the current state and available operators
+    action_layer = []
+    for operator in operators:
+        if preconditions_satisfied(operator, state):
+            action_layer.add(operator)
+    return action_layer
+
+def preconditions_satisfied(operator, state):
+    # Check if the preconditions of the operator are satisfied in the current state
+    relevant_params = [fact for fact in state if isinstance(fact, eval(operator.params[0].type))]
+    params_list = check_params(operator.params, relevant_params)
+    for precond in operator.preconds:
+        if not check_precond(precond, params_list):
+            return False
+    return True
+
+def create_fact_layer(action_layer):
+    # Create a fact layer based on the action layer
+    fact_layer = set()
+    for action in action_layer:
+        for effect in action.effects:
+            apply_effect(effect, fact_layer)
+    return fact_layer
+
+def extract_plan(planning_graph, goals, operators):
+    # Extract a plan from the planning graph by backtracking from the goals
+    plan = []
+    for i in range(len(planning_graph) - 1, 0, -2):
+        action_layer = planning_graph[i - 1]
+        fact_layer = planning_graph[i]
+
+        for goal in goals:
+            for action in action_layer:
+                if any(effect.operand == 'at' and effect.object_types[0].strip('()') == goal[0].name and
+                       effect.object_types[1].strip('()') == goal[1].name for effect in action.effects):
+                    plan.append(action)
+                    break
+    return plan
 
 def main():
     parser = argparse.ArgumentParser(description='Planificateur de tâches utilisant l\'algorithme Graphplan')
@@ -307,6 +365,9 @@ def main():
     args = parser.parse_args()
 
     optimal_plan = graphplan(args.r_ops, args.r_facts)
+    print("Optimal Plan:")
+    for step in optimal_plan:
+        print(step.name)
 
 if __name__ == "__main__":
     main()
