@@ -1,5 +1,6 @@
 import argparse
 import re
+from itertools import product
 
 class Fact:
     def __init__(self, name):
@@ -27,11 +28,14 @@ class ROCKET(OBJECT):
     def __init__(self, name):
         super().__init__(name)
         self.has_fuel = False
-        self.cargo = None
+        self.cargo = []
     def set_has_fuel(self, has_fuel):
         self.has_fuel = has_fuel
-    def set_cargo(self, cargo):
-        self.cargo = cargo
+    def add_cargo(self, cargo):
+        self.cargo.append(cargo)
+    def remove_cargo(self, cargo):
+        self.cargo.remove(cargo)
+
 
 class Operator:
     def __init__(self, name):
@@ -112,7 +116,7 @@ def check_precond(op_precond, params):
             type2 = op_precond.object_types[1]
             obj2 = find_with_variable(params, type2)
             if obj1.value.location.name != obj2.value.name:
-                raise ValueError(f"Object {obj1.name} is not at the location {obj2.name}")
+                return False
             else:
                 return True
         case 'in':
@@ -120,49 +124,50 @@ def check_precond(op_precond, params):
             obj1 = find_with_variable(params, type1)
             type2 = op_precond.object_types[1]
             obj2 = find_with_variable(params, type2)
-            if obj2.value.cargo.name != obj1.value.name:
-                raise ValueError(f"Object {obj1.name} is not in the rocket {obj2.name}")
+            if not obj1.value in obj2.value.cargo:
+                return False
             else:
                 return True
         case 'has-fuel':
             type1 = op_precond.object_types[0]
             obj1 = find_with_variable(params, type1)
             if not obj1.value.has_fuel:
-                raise ValueError(f"Object {obj1.name} has no fuel")
+                return False
             else:
                 return True
-def apply_effect(op_effect, params, facts):
+def apply_effect(op_effect, param_dict, facts):
     match op_effect.operand:
-        case '(in':
+        case 'in':
             type1 = op_effect.object_types[0].strip('()')
-            obj1 = find_with_variable(params, type1)
+            obj1 = param_dict[type1]
             type2 = op_effect.object_types[1].strip('()')
-            obj2 = find_with_variable(params, type2)
-            find_in_list(facts, obj2.value.name).set_cargo(obj1.value)
-        case '(del':
+            obj2 = param_dict[type2]
+            find_in_list(facts, obj2.name).add_cargo(obj1)
+        case 'del':
             match op_effect.object_types[0]:
                 case 'at':
                     type1 = op_effect.object_types[1].strip('()')
-                    obj1 = find_with_variable(params, type1)
+                    obj1 = param_dict[type1]
                     type2 = op_effect.object_types[2].strip('()')
-                    obj2 = find_with_variable(params, type2)
-                    if(obj1.value.location.name == obj2.value.name):
-                        find_in_list(facts, obj1.value.name).set_location(None)
+                    obj2 = param_dict[type2]
+                    if obj1.location.name == obj2.name:
+                        find_in_list(facts, obj1.name).set_location(None)
                 case 'in':
                     type1 = op_effect.object_types[2].strip('()')
-                    obj1 = find_with_variable(params, type1)
-                    find_in_list(facts, obj1.value.name).set_cargo(None)
+                    obj1 = param_dict[type1]
+                    type2 = op_effect.object_types[1].strip('()')
+                    obj2 = param_dict[type2]
+                    find_in_list(facts, obj1.name).remove_cargo(obj2)
                 case 'has-fuel':
                     type1 = op_effect.object_types[1].strip('()')
-                    obj1 = find_with_variable(params, type1)
-                    find_in_list(facts, obj1.value.name).set_has_fuel(False)
-        case '(at':
+                    obj1 = param_dict[type1]
+                    find_in_list(facts, obj1.name).set_has_fuel(False)
+        case 'at':
             type1 = op_effect.object_types[0].strip('()')
-            obj1 = find_with_variable(params, type1)
+            obj1 = param_dict[type1]
             type2 = op_effect.object_types[1].strip('()')
-            obj2 = find_with_variable(params, type2)
-            find_in_list(facts, obj1.value.name).set_location(obj2.value)
-            print("we have set the location of " + obj1.value.name + " to " + obj2.value.name)
+            obj2 = param_dict[type2]
+            find_in_list(facts, obj1.name).set_location(obj2)
 
 
 def handle_operation(operator, params, facts):
@@ -171,7 +176,6 @@ def handle_operation(operator, params, facts):
         check_precond(precond, params_list)
     for effect in operator.effects:
         apply_effect(effect, params_list, facts)
-    print("We made it here!")
 
 
 def graphplan(r_ops_file, r_facts_file):
@@ -283,34 +287,30 @@ def DoPlan(operators, facts):
     initial_state = set(facts)
     # Create a list of goals as (cargo, destination) tuples
     goals = [(fact, fact.destination) for fact in facts if isinstance(fact, CARGO) and fact.destination]
-    for goal in goals:
-        print(goal)
 
     plan = []
     planning_graph = []
     planning_graph.append(initial_state)
-    print("Planning graph:")
-    print(planning_graph)
 
     # While goals are not satisfied
-    while not goals_satisfied(goals, planning_graph[-1]):
+    while not goals_satisfied(goals):
+        print("New iteration!")
         # Create action layer
+        print("Creating action layer!")
         action_layer = create_action_layer(planning_graph[-1], operators)
-        print("action_layer:")
-        print(action_layer)
         planning_graph.append(action_layer)
 
         # Create fact layer
+        print("Creating fact layer!")
         fact_layer = create_fact_layer(action_layer)
-        print("fact_layer:")
-        print(fact_layer)
         planning_graph.append(fact_layer)
+        print("Planning_graph: ", planning_graph)
 
     # Extract plan from the planning graph
     plan = extract_plan(planning_graph, goals, operators)
     return plan
 
-def goals_satisfied(goals, state):
+def goals_satisfied(goals):
     # Check if all goals are satisfied in the current state
     for cargo, destination in goals:
         if cargo.location != destination:
@@ -318,17 +318,29 @@ def goals_satisfied(goals, state):
     return True
 
 def create_action_layer(state, operators):
-    # Create an action layer based on the current state and available operators
     action_layer = []
     for operator in operators:
-        if preconditions_satisfied(operator, state):
-            action_layer.add(operator)
+        # Generate all possible combinations of parameters for the operator
+        possible_params = [
+            [fact for fact in state if isinstance(fact, eval(param.type))]
+            for param in operator.params
+        ]
+        # Check each combination of parameters
+        for param_combination in product(*possible_params):
+
+            param_dict = {param.name: fact for param, fact in zip(operator.params, param_combination)}
+            if preconditions_satisfied(operator, param_dict):
+                action_layer.append((operator, param_dict))
+    #for action in action_layer:
+        #print("new action")
+        #print("operator: ", action[0].name)
+        #print("params: ", action[1])
     return action_layer
 
-def preconditions_satisfied(operator, state):
-    # Check if the preconditions of the operator are satisfied in the current state
-    relevant_params = [fact for fact in state if isinstance(fact, eval(operator.params[0].type))]
-    params_list = check_params(operator.params, relevant_params)
+def preconditions_satisfied(operator, param_dict):
+    # Create a list of VariablePairs from the param_dict
+    params_list = [VariablePair(param, param_dict[param.name]) for param in operator.params]
+
     for precond in operator.preconds:
         if not check_precond(precond, params_list):
             return False
@@ -337,9 +349,9 @@ def preconditions_satisfied(operator, state):
 def create_fact_layer(action_layer):
     # Create a fact layer based on the action layer
     fact_layer = set()
-    for action in action_layer:
+    for action, param_dict in action_layer:
         for effect in action.effects:
-            apply_effect(effect, fact_layer)
+            apply_effect(effect, param_dict, fact_layer)
     return fact_layer
 
 def extract_plan(planning_graph, goals, operators):
