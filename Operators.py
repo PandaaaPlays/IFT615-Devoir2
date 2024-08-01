@@ -21,7 +21,7 @@ def unload(cargo, rocket, location_to):
 
 
 def move(rocket, location_to, location_from):
-    new_rocket = ROCKET(rocket.name)
+    new_rocket = rocket.__copy__()
     new_rocket.set_location(location_to)
     new_rocket.set_has_fuel(False)
     return new_rocket
