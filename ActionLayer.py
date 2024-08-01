@@ -11,13 +11,10 @@ class PLACE(Fact):
 class OBJECT(Fact):
     def __init__(self, name):
         super().__init__(name)
-        self.location = []
+        self.location = None
 
-    def add_location(self, location):
-        self.location.append(location)
-
-    def remove_location(self, location):
-        self.location.remove(location)
+    def set_location(self, location):
+        self.location = location
 
 
 class CARGO(OBJECT):
@@ -27,6 +24,12 @@ class CARGO(OBJECT):
 
     def set_destination(self, destination):
         self.destination = destination
+
+    def __copy__(self):
+        new_cargo = CARGO(self.name)
+        new_cargo.destination = self.destination
+        new_cargo.location = self.location
+        return new_cargo
 
 
 class ROCKET(OBJECT):
@@ -43,6 +46,13 @@ class ROCKET(OBJECT):
 
     def remove_cargo(self, cargo):
         self.cargo.remove(cargo)
+
+    def __copy__(self):
+        new_rocket = ROCKET(self.name)
+        new_rocket.cargo = self.cargo
+        new_rocket.set_location(self.location)
+        new_rocket.set_has_fuel(self.has_fuel)
+        return new_rocket
 
 
 def create_action_layer(fact_layer, operators):
@@ -76,7 +86,7 @@ def check_precond(op_precond, params):
             obj1 = find_with_variable(params, type1)
             type2 = op_precond.object_types[1]
             obj2 = find_with_variable(params, type2)
-            if obj1.value.location[0].name != obj2.value.name:
+            if obj1.value.location.name != obj2.value.name:
                 return False
             else:
                 return True
