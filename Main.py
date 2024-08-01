@@ -2,97 +2,10 @@ import argparse
 import re
 from itertools import product
 
-class Fact:
-    def __init__(self, name):
-        self.name = name
-
-class PLACE(Fact):
-    def __init__(self, name):
-        super().__init__(name)
-
-class OBJECT(Fact):
-    def __init__(self, name):
-        super().__init__(name)
-        self.location = None
-    def set_location(self, location):
-        self.location = location
-
-class CARGO(OBJECT):
-    def __init__(self, name):
-        super().__init__(name)
-        self.destination = None
-    def set_destination(self, destination):
-        self.destination = destination
-
-class ROCKET(OBJECT):
-    def __init__(self, name):
-        super().__init__(name)
-        self.has_fuel = False
-        self.cargo = []
-    def set_has_fuel(self, has_fuel):
-        self.has_fuel = has_fuel
-    def add_cargo(self, cargo):
-        self.cargo.append(cargo)
-    def remove_cargo(self, cargo):
-        self.cargo.remove(cargo)
-
-
-class Operator:
-    def __init__(self, name):
-        self.name = name
-        self.params = []
-        self.preconds = []
-        self.effects =[]
-
-    def add_param(self, param):
-        self.params.append(param)
-    def add_precond(self, precond):
-        self.preconds.append(precond)
-    def add_effect(self, effect):
-        self.effects.append(effect)
-
-class Parameter:
-    def __init__(self, name, type):
-        self.name = name
-        self.type = type
-
-class Precondition:
-    def __init__(self, operand, object_types):
-        self.operand = operand
-        self.object_types = object_types
-
-class Effect:
-    def __init__(self, operand, object_types):
-        self.operand = operand
-        self.object_types = object_types
-
-class VariablePair:
-    def __init__(self, variable, value):
-        self.variable = variable
-        self.value = value
-
-def read_lines(file_path):
-    lines = []
-    with open(file_path, 'r') as file:
-        for line in file:
-            line = line.strip()
-            if not line:
-                continue
-            lines.append(line)
-    return lines
-
-def find_in_list(list, name):
-    for fact in list:
-        if fact.name == name:
-            return fact
-    raise ValueError(f"{name} not found in the list")
-
-
-def find_with_variable(list, variable):
-    for var in list:
-        if var.variable.name == variable:
-            return var
-    raise ValueError(f"{variable} not found in the list")
+from ActionLayer import create_action_layer, ROCKET, CARGO, OBJECT, PLACE
+from FactLayer import create_fact_layer
+from Objects import VariablePair, Operator, Parameter, Precondition, Effect
+from Utils import find_with_variable, find_in_list, read_lines
 
 
 def check_params(op_params, params):
@@ -108,33 +21,6 @@ def check_params(op_params, params):
 
     return list
 
-def check_precond(op_precond, params):
-    match op_precond.operand:
-        case 'at':
-            type1 = op_precond.object_types[0]
-            obj1 = find_with_variable(params, type1)
-            type2 = op_precond.object_types[1]
-            obj2 = find_with_variable(params, type2)
-            if obj1.value.location.name != obj2.value.name:
-                return False
-            else:
-                return True
-        case 'in':
-            type1 = op_precond.object_types[0]
-            obj1 = find_with_variable(params, type1)
-            type2 = op_precond.object_types[1]
-            obj2 = find_with_variable(params, type2)
-            if not obj1.value in obj2.value.cargo:
-                return False
-            else:
-                return True
-        case 'has-fuel':
-            type1 = op_precond.object_types[0]
-            obj1 = find_with_variable(params, type1)
-            if not obj1.value.has_fuel:
-                return False
-            else:
-                return True
 def apply_effect(op_effect, param_dict, facts):
     match op_effect.operand:
         case 'in':
@@ -150,7 +36,7 @@ def apply_effect(op_effect, param_dict, facts):
                     obj1 = param_dict[type1]
                     type2 = op_effect.object_types[2].strip('()')
                     obj2 = param_dict[type2]
-                    if obj1.location.name == obj2.name:
+                    if obj1[0].location[0].name == obj2.name:
                         find_in_list(facts, obj1.name).set_location(None)
                 case 'in':
                     type1 = op_effect.object_types[2].strip('()')
@@ -168,14 +54,6 @@ def apply_effect(op_effect, param_dict, facts):
             type2 = op_effect.object_types[1].strip('()')
             obj2 = param_dict[type2]
             find_in_list(facts, obj1.name).set_location(obj2)
-
-
-def handle_operation(operator, params, facts):
-    params_list = check_params(operator.params, params)
-    for precond in operator.preconds:
-        check_precond(precond, params_list)
-    for effect in operator.effects:
-        apply_effect(effect, params_list, facts)
 
 
 def graphplan(r_ops_file, r_facts_file):
@@ -206,7 +84,7 @@ def graphplan(r_ops_file, r_facts_file):
         if(argument == 'at'):
             object = find_in_list(facts, parts[1])
             place = find_in_list(facts, parts[2].strip('()'))
-            object.set_location(place)
+            object.add_location(place)
         if(argument == 'has-fuel'):
             rocket = find_in_list(facts, parts[1].strip('()'))
             rocket.set_has_fuel(True)
@@ -281,32 +159,68 @@ def graphplan(r_ops_file, r_facts_file):
 def DoPlan(operators, facts):
     # Implement the Graphplan algorithm to find the optimal plan
     # 1. Initialize the planning graph with initial facts
-    # 2. Expand the graph by alternating between action and fact layers
-    # 3. Check for goal reachability and extract the plan
-
-    initial_state = set(facts)
-    # Create a list of goals as (cargo, destination) tuples
+    initial_state = facts
+    planning_graph = [initial_state]
     goals = [(fact, fact.destination) for fact in facts if isinstance(fact, CARGO) and fact.destination]
 
     plan = []
-    planning_graph = []
-    planning_graph.append(initial_state)
+    no_solution = False
+    i = 0
 
-    # While goals are not satisfied
+    # 2. Expand the graph by alternating between action and fact layers
     while not goals_satisfied(goals):
-        print("New iteration!")
+        print(f"\nIteration {i} :")
+
+        # Printing actual facts
+        print(f"Facts:")
+        for fact in planning_graph[i]:
+            print(f" - {fact.name}")
+            if isinstance(fact, OBJECT):
+                print(f"   Location: {fact.location[0].name if fact.location[0] else 'None'}")
+            if isinstance(fact, ROCKET):
+                print(f"   Has fuel: {fact.has_fuel}")
+            if isinstance(fact, CARGO):
+                print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
+
         # Create action layer
-        print("Creating action layer!")
-        action_layer = create_action_layer(planning_graph[-1], operators)
-        planning_graph.append(action_layer)
+        action_layer = create_action_layer(planning_graph[i], operators)
+        if not action_layer:
+            no_solution = True
+            break
+
+        # Printing actions
+        #for action, params in action_layer:
+        #    print(f"Action: {action.name}")
+        #    for param_name, fact in params.items():
+        #        print(f"  {param_name}: {fact.name} (Type: {type(fact).__name__})")
 
         # Create fact layer
-        print("Creating fact layer!")
-        fact_layer = create_fact_layer(action_layer)
+        fact_layer = create_fact_layer(action_layer, planning_graph[i])
         planning_graph.append(fact_layer)
-        print("Planning_graph: ", planning_graph)
 
-    # Extract plan from the planning graph
+        print(f"Facts:")
+        for fact in planning_graph[i+1]:
+            print(f" - {fact.name}")
+            if isinstance(fact, OBJECT):
+                print(f"   Location: {fact.location.name if fact.location else 'None'}")
+            if isinstance(fact, ROCKET):
+                print(f"   Has fuel: {fact.has_fuel}")
+            if isinstance(fact, CARGO):
+                print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
+
+        # Check for early exit condition
+        if planning_graph[i+1] == planning_graph[i]:
+            no_solution = True
+            break
+
+        i += 1
+
+    # If no solution is found, return an empty plan
+    if no_solution:
+        print("No solution found.")
+        return plan
+
+    # 3. Check for goal reachability and extract the plan
     plan = extract_plan(planning_graph, goals, operators)
     return plan
 
@@ -317,42 +231,6 @@ def goals_satisfied(goals):
             return False
     return True
 
-def create_action_layer(state, operators):
-    action_layer = []
-    for operator in operators:
-        # Generate all possible combinations of parameters for the operator
-        possible_params = [
-            [fact for fact in state if isinstance(fact, eval(param.type))]
-            for param in operator.params
-        ]
-        # Check each combination of parameters
-        for param_combination in product(*possible_params):
-
-            param_dict = {param.name: fact for param, fact in zip(operator.params, param_combination)}
-            if preconditions_satisfied(operator, param_dict):
-                action_layer.append((operator, param_dict))
-    #for action in action_layer:
-        #print("new action")
-        #print("operator: ", action[0].name)
-        #print("params: ", action[1])
-    return action_layer
-
-def preconditions_satisfied(operator, param_dict):
-    # Create a list of VariablePairs from the param_dict
-    params_list = [VariablePair(param, param_dict[param.name]) for param in operator.params]
-
-    for precond in operator.preconds:
-        if not check_precond(precond, params_list):
-            return False
-    return True
-
-def create_fact_layer(action_layer):
-    # Create a fact layer based on the action layer
-    fact_layer = set()
-    for action, param_dict in action_layer:
-        for effect in action.effects:
-            apply_effect(effect, param_dict, fact_layer)
-    return fact_layer
 
 def extract_plan(planning_graph, goals, operators):
     # Extract a plan from the planning graph by backtracking from the goals
