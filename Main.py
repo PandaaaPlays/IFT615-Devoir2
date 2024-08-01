@@ -131,44 +131,41 @@ def DoPlan(operators, facts):
     i = 0
 
     # 2. Expand the graph by alternating between action and fact layers
-    print(f"\nIteration {i} :")
+    while goals_satisfied(goals):
+        print(f"\nIteration {i} :")
 
-    # Printing actual facts
-    print(f"Facts:")
-    for fact in planning_graph[-1]:
-        print(f" - {fact.name}")
-        if isinstance(fact, OBJECT):
-            print(f"   Location: {fact.location.name if fact.location else 'None'}")
-        if isinstance(fact, ROCKET):
-            print(f"   Has fuel: {fact.has_fuel}")
-        if isinstance(fact, CARGO):
-            print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
+        # Printing actual facts
+        print(f"Facts:")
+        for fact in planning_graph[i]:
+            print(f" - {fact}")
 
-    # Create action layer
-    action_layer = create_action_layer(planning_graph[i], operators)
+        # Create action layer
+        action_layer = create_action_layer(planning_graph[i], operators)
+        if not action_layer:
+            no_solution = True
+            break
+
+        # Printing actions
+        #for action, params in action_layer:
+        #    print(f"Action: {action.name}")
+        #    for param_name, fact in params.items():
+        #        print(f"  {param_name}: {fact.name} (Type: {type(fact).__name__})")
+
+        # Create fact layer
+        fact_layer = create_fact_layer(action_layer, planning_graph[i])
+        planning_graph.append(fact_layer)
+
+        print(f"Facts:")
+        for fact in planning_graph[i+1]:
+            print(f" - {fact}")
 
 
-    # Printing actions
-    # for action, params in action_layer:
-    #    print(f"Action: {action.name}")
-    #    for param_name, fact in params.items():
-    #        print(f"  {param_name}: {fact.name} (Type: {type(fact).__name__})")
+        # Check for early exit condition
+        if planning_graph[i+1] == planning_graph[i]:
+            no_solution = True
+            break
 
-    # Create fact layer
-    fact_layer = create_fact_layer(action_layer, planning_graph[i])
-    planning_graph.append(fact_layer)
-
-    print(f"Facts:")
-    for fact in planning_graph[-1]:
-        print(f" - {fact.name}")
-        if isinstance(fact, OBJECT):
-            print(f"   Location: {fact.location.name if fact.location else 'None'}")
-        if isinstance(fact, ROCKET):
-            print(f"   Has fuel: {fact.has_fuel}")
-        if isinstance(fact, CARGO):
-            print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
-
-    # Check for early exit condition
+        i += 1
 
     # If no solution is found, return an empty plan
     if no_solution:
@@ -176,7 +173,7 @@ def DoPlan(operators, facts):
         return plan
 
     # 3. Check for goal reachability and extract the plan
-    #plan = extract_plan(planning_graph, goals, operators)
+    plan = extract_plan(planning_graph, goals, operators)
     return plan
 
 def goals_satisfied(goals):
