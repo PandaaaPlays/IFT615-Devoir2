@@ -36,16 +36,16 @@ class ROCKET(OBJECT):
     def __init__(self, name):
         super().__init__(name)
         self.has_fuel = False
-        self.cargo = []
+        self.cargo = set()
 
     def set_has_fuel(self, has_fuel):
         self.has_fuel = has_fuel
 
     def add_cargo(self, cargo):
-        self.cargo.append(cargo)
+        self.cargo.add(cargo)
 
     def remove_cargo(self, cargo):
-        self.cargo.remove(cargo)
+        self.cargo.discard(cargo)
 
     def __copy__(self):
         new_rocket = ROCKET(self.name)

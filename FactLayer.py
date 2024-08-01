@@ -1,4 +1,4 @@
-from Operators import move, load
+from Operators import move, load, unload
 from Utils import find_in_list
 
 
@@ -53,7 +53,7 @@ def create_fact_layer(action_layer, facts):
                 obj = params[type]
                 rocket = find_in_list(facts, obj.name)
 
-                new_cargo, new_rocket = load(cargo, rocket, to_location)
+                new_cargo, new_rocket = unload(cargo, rocket, to_location)
 
                 fact_layer.append(new_rocket)
                 fact_layer.append(new_cargo)

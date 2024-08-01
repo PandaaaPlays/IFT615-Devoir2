@@ -12,6 +12,7 @@ def load(cargo, rocket, location_from):
 
 
 def unload(cargo, rocket, location_to):
+    print(f"Unloading {cargo.name} from {rocket.name} at {location_to.name}")
     new_rocket = rocket.__copy__()
     new_cargo = cargo.__copy__()
     new_rocket.remove_cargo(cargo)
