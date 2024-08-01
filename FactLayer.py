@@ -19,7 +19,8 @@ def create_fact_layer(action_layer, facts):
                 obj = params[type]
                 location_from = find_in_list(facts, obj.name)
 
-                fact_layer.append(move(rocket, location_to, location_from))
+                if location_from != location_to:
+                    fact_layer.append(move(rocket, location_to, location_from))
 
             case 'LOAD':
                 type = action.effects[0].object_types[0].strip('()')

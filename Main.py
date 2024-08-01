@@ -1,7 +1,8 @@
 import argparse
 import re
 
-from ActionLayer import create_action_layer, ROCKET, CARGO, OBJECT, PLACE
+import ActionLayer
+from ActionLayer import create_action_layer, ROCKET, CARGO, PLACE
 from FactLayer import create_fact_layer
 from Objects import VariablePair, Operator, Parameter, Precondition, Effect
 from Utils import find_with_variable, find_in_list, read_lines
@@ -65,7 +66,7 @@ def graphplan(r_ops_file, r_facts_file):
     counter = 0
     operators = []
     while counter < len(file_operators):
-        counter += 1; #skip la ligne operator
+        counter += 1;
         op = Operator(file_operators[counter])
         counter += 2
         parts = re.findall(r'\([^)]*\)', file_operators[counter])
@@ -123,7 +124,7 @@ def DoPlan(operators, facts):
     # Implement the Graphplan algorithm to find the optimal plan
     # 1. Initialize the planning graph with initial facts
     initial_state = facts
-    planning_graph = [initial_state]
+    planning_graph = [list(initial_state)]
     goals = [(fact, fact.destination) for fact in facts if isinstance(fact, CARGO) and fact.destination]
 
     plan = []
@@ -131,19 +132,16 @@ def DoPlan(operators, facts):
     i = 0
 
     # 2. Expand the graph by alternating between action and fact layers
-    while goals_satisfied(goals):
+    while not goals_satisfied(goals, planning_graph[i]):
         print(f"\nIteration {i} :")
 
         # Printing actual facts
-        print(f"Facts:")
-        for fact in planning_graph[i]:
-            print(f" - {fact}")
+        #print(f"Facts:")
+        #for fact in planning_graph[i]:
+        #    print(f" - {fact.name}")
 
         # Create action layer
         action_layer = create_action_layer(planning_graph[i], operators)
-        if not action_layer:
-            no_solution = True
-            break
 
         # Printing actions
         #for action, params in action_layer:
@@ -156,14 +154,14 @@ def DoPlan(operators, facts):
         planning_graph.append(fact_layer)
 
         print(f"Facts:")
-        for fact in planning_graph[i+1]:
-            print(f" - {fact}")
-
-
-        # Check for early exit condition
-        if planning_graph[i+1] == planning_graph[i]:
-            no_solution = True
-            break
+        for fact in planning_graph[i + 1]:
+            print(f" - {fact.name}")
+            if isinstance(fact, ActionLayer.OBJECT):
+                print(f"   Location: {fact.location.name if fact.location else 'None'}")
+            if isinstance(fact, ROCKET):
+                print(f"   Has fuel: {fact.has_fuel}")
+            if isinstance(fact, CARGO):
+                print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
 
         i += 1
 
@@ -176,12 +174,17 @@ def DoPlan(operators, facts):
     plan = extract_plan(planning_graph, goals, operators)
     return plan
 
-def goals_satisfied(goals):
-    # Check if all goals are satisfied in the current state
-    for cargo, destination in goals:
-        if cargo.location != destination:
-            return False
-    return True
+
+def goals_satisfied(goals, graph):
+    cargo_dict = {cargo.name: False for cargo, destination in goals}
+
+    for obj in graph:
+        if isinstance(obj, ActionLayer.CARGO) and obj.destination == obj.location:
+            cargo_dict[obj.name] = True
+
+    print(cargo_dict)
+
+    return all(cargo_dict.values())
 
 
 def extract_plan(planning_graph, goals, operators):

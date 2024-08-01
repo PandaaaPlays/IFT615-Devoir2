@@ -86,7 +86,9 @@ def check_precond(op_precond, params):
             obj1 = find_with_variable(params, type1)
             type2 = op_precond.object_types[1]
             obj2 = find_with_variable(params, type2)
-            if obj1.value.location.name != obj2.value.name:
+            if obj1.value.location == None:
+                return False
+            elif obj1.value.location.name != obj2.value.name:
                 return False
             else:
                 return True
