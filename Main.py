@@ -119,18 +119,16 @@ def graphplan(r_ops_file, r_facts_file):
     return DoPlan(operators, facts)
 
 def DoPlan(operators, facts):
-    # Implement the Graphplan algorithm to find the optimal plan
-    # 1. Initialize the planning graph with initial facts
     initial_state = facts
     fact_graph = [list(initial_state)]
     action_graph = []
     goals = [(fact, fact.destination) for fact in facts if isinstance(fact, CARGO) and fact.destination]
 
     plan = []
+    mutex_actions = []
     i = 0
 
-    # 2. Expand the graph by alternating between action and fact layers
-    while not goals_satisfied(goals, fact_graph[i]) and i < 4:
+    while not goals_satisfied(goals, fact_graph[i], mutex_actions):
         print(f"\nIteration {i} :")
 
         print(f"Facts:")
@@ -146,8 +144,9 @@ def DoPlan(operators, facts):
                 print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
 
         # Create action layer
-        action_layer, mutex_actions = create_action_layer(fact_graph[i], operators)
+        action_layer, mutex_action = create_action_layer(fact_graph[i], operators)
         action_graph.append(action_layer)
+        mutex_actions.append(mutex_action)
 
         # Create fact layer
         fact_layer = create_fact_layer(action_graph[-1], fact_graph[-1])
