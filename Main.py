@@ -3,10 +3,9 @@ import re
 
 import ActionLayer
 from ActionLayer import create_action_layer, ROCKET, CARGO, PLACE
-from ExtractPlan import extract_plan
 from FactLayer import create_fact_layer
 from Objects import VariablePair, Operator, Parameter, Precondition, Effect
-from Utils import find_with_variable, find_in_list, read_lines
+from Utils import find_in_list, read_lines
 
 def check_params(op_params, params):
     if len(op_params) != len(params):
@@ -34,11 +33,11 @@ def graphplan(r_ops_file, r_facts_file):
         fact_type = parts[1].strip('()')
         match fact_type:
             case 'PLACE':
-                facts.append(PLACE(name))
+                facts.append(PLACE(name, None))
             case 'CARGO':
-                facts.append(CARGO(name))
+                facts.append(CARGO(name, None))
             case 'ROCKET':
-                facts.append(ROCKET(name))
+                facts.append(ROCKET(name, None))
         counter += 1
 
     counter +=1
@@ -107,8 +106,6 @@ def graphplan(r_ops_file, r_facts_file):
         counter += 1
         operators.append(op)
 
-
-
     #print("Facts:")
     #for fact in facts:
      #   print("Name: " + fact.name)
@@ -133,35 +130,35 @@ def DoPlan(operators, facts):
     i = 0
 
     # 2. Expand the graph by alternating between action and fact layers
-    while not goals_satisfied(goals, fact_graph[i]) and i < 3:
+    while not goals_satisfied(goals, fact_graph[i]) and i < 4:
         print(f"\nIteration {i} :")
 
         print(f"Facts:")
         for fact in fact_graph[i]:
-            print(f" - {fact.name} ({fact})")
+            print(f" - {fact.name}")
             if isinstance(fact, ActionLayer.OBJECT):
                 print(f"   Location: {fact.location.name if fact.location else 'None'}")
             if isinstance(fact, ROCKET):
                 print(f"   Has fuel: {fact.has_fuel}")
                 print(f"   Cargos: {fact.cargo}")
+                print(f"   Action: {fact.action.operator.name if fact.action else 'None'} | {fact.action.params if fact.action else 'None'}")
             if isinstance(fact, CARGO):
                 print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
 
-
         # Create action layer
-        action_layer = create_action_layer(fact_graph[i], operators)
+        action_layer, mutex_actions = create_action_layer(fact_graph[i], operators)
         action_graph.append(action_layer)
 
         # Create fact layer
         fact_layer = create_fact_layer(action_graph[-1], fact_graph[-1])
         fact_graph.append(fact_layer)
 
-
         i += 1
 
-   # plan = extract_plan(fact_graph, action_graph, goals)
+    #plan = extract_plan(fact_graph, action_graph, goals)
 
     return plan
+
 
 def goals_satisfied(goals, graph):
     cargo_dict = {cargo.name: False for cargo, destination in goals}

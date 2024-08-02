@@ -1,7 +1,13 @@
 class Fact:
-    def __init__(self, name):
+    def __init__(self, name, action):
         self.name = name
-        self.parent = None
+        self.action = action
+
+class Action:
+    def __init__(self, operator, params):
+        self.operator = operator
+        self.params = params
+
 
 class Operator:
     def __init__(self, name):

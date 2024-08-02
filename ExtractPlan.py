@@ -4,7 +4,7 @@ def extract_plan(fact_graph, action_graph, goals):
     plan = []
 
     for action, params in action_graph[-1]:
-        result_list = []
+        result_list = set()
         found = apply_effects(action, params, fact_graph[-2], result_list)
         for cargo, destination in goals:
             for result in result_list:

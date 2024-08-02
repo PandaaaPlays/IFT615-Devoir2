@@ -4,7 +4,7 @@ from ActionLayer import ROCKET, CARGO
 
 
 def load(cargo, rocket, location_from):
-    print(f"Loading {cargo.name} in {rocket.name}")
+    print(f"Trying : LOAD {cargo.name} in {rocket.name} from {location_from.name}")
     new_rocket = rocket.copy()
     new_cargo = cargo.copy()
     new_rocket.add_cargo(cargo)
@@ -13,7 +13,7 @@ def load(cargo, rocket, location_from):
 
 
 def unload(cargo, rocket, location_to):
-    print(f"Unloading {cargo.name} from {rocket.name} at {location_to.name}")
+    print(f"Trying : UNLOAD {cargo.name} from {rocket.name} at {location_to.name}")
     new_rocket = rocket.copy()
     new_cargo = cargo.copy()
     new_rocket.remove_cargo(cargo)
@@ -22,10 +22,8 @@ def unload(cargo, rocket, location_to):
 
 
 def move(rocket, location_to, location_from):
-    print(f"Moving {rocket.name} from {location_from.name} to {location_to.name}")
-    print(f"Bef {rocket.cargo}")
+    print(f"Trying : MOVE {rocket.name} from {location_from.name} to {location_to.name}")
     new_rocket = rocket.copy()
-    print(f"Aft {new_rocket.cargo}")
     new_rocket.set_location(location_to)
     new_rocket.set_has_fuel(False)
     return new_rocket

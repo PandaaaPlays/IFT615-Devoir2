@@ -15,6 +15,11 @@ def find_in_list(fact_list, name):
             return fact
     raise ValueError(f"{name} not found in the list")
 
+def find_with_obj(fact_list, obj):
+    for fact in fact_list:
+        if fact == obj:
+            return fact
+    raise ValueError(f"{obj} not found in the list")
 
 def find_with_variable(fact_list, variable):
     for fact in fact_list:
