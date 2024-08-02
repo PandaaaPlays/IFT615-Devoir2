@@ -5,12 +5,12 @@ from Utils import find_with_variable
 
 class PLACE(Fact):
     def __init__(self, name, action):
-        super().__init__(name, action)
+        super().__init__(name)
 
 
 class OBJECT(Fact):
     def __init__(self, name, action):
-        super().__init__(name, action)
+        super().__init__(name)
         self.location = None
 
     def set_location(self, location):
@@ -25,14 +25,10 @@ class CARGO(OBJECT):
     def set_destination(self, destination):
         self.destination = destination
 
-    def set_action(self, action):
-        self.action = action
-
     def copy(self):
         new_cargo = CARGO(self.name, self.action)
         new_cargo.set_destination(self.destination)
         new_cargo.location = self.location
-        new_cargo.set_action(self.action)
         return new_cargo
 
 
@@ -51,15 +47,11 @@ class ROCKET(OBJECT):
     def remove_cargo(self, cargo):
         self.cargo.discard(cargo)
 
-    def set_action(self, action):
-        self.action = action
-
     def copy(self):
         new_rocket = ROCKET(self.name, self.action)
         new_rocket.cargo = set(self.cargo)
         new_rocket.set_location(self.location)
         new_rocket.set_has_fuel(self.has_fuel)
-        new_rocket.set_action(self.action)
         return new_rocket
 
 

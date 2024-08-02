@@ -128,7 +128,7 @@ def DoPlan(operators, facts):
     mutex_actions = []
     i = 0
 
-    while not goals_satisfied(goals, fact_graph[i], mutex_actions):
+    while not goals_satisfied(goals, fact_graph[i]):
         print(f"\nIteration {i} :")
 
         print(f"Facts:")
@@ -139,9 +139,16 @@ def DoPlan(operators, facts):
             if isinstance(fact, ROCKET):
                 print(f"   Has fuel: {fact.has_fuel}")
                 print(f"   Cargos: {fact.cargo}")
-                print(f"   Action: {fact.action.operator.name if fact.action else 'None'} | {fact.action.params if fact.action else 'None'}")
+                print(f"   Actions: ")
+                if fact.action:
+                    for action in fact.action:
+                        print(f"    - {action}")
             if isinstance(fact, CARGO):
                 print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
+                print(f"   Actions: ")
+                if fact.action:
+                    for action in fact.action:
+                        print(f"    - {action}")
 
         # Create action layer
         action_layer, mutex_action = create_action_layer(fact_graph[i], operators)

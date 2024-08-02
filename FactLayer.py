@@ -1,3 +1,4 @@
+from ActionLayer import CARGO, ROCKET
 from Operators import move, load, unload
 from Utils import find_with_obj
 
@@ -27,8 +28,8 @@ def apply_effects(action, facts, list_to_apply):
 
             if location_from.name != location_to.name:
                 new_rocket = move(rocket, location_to, location_from)
-                new_rocket.set_action(action)
-                list_to_apply.add(new_rocket)
+                new_rocket.add_action(action)
+                add(new_rocket, list_to_apply)
 
             return rocket
 
@@ -46,11 +47,11 @@ def apply_effects(action, facts, list_to_apply):
             location_from = find_with_obj(facts, obj)
 
             new_cargo, new_rocket = load(cargo, rocket, location_from)
-            new_cargo.set_action(action)
-            new_rocket.set_action(action)
+            new_cargo.add_action(action)
+            new_rocket.add_action(action)
 
-            list_to_apply.add(new_rocket)
-            list_to_apply.add(new_cargo)
+            add(new_rocket, list_to_apply)
+            add(new_cargo, list_to_apply)
 
             return (rocket, cargo)
 
@@ -68,10 +69,32 @@ def apply_effects(action, facts, list_to_apply):
             rocket = find_with_obj(facts, obj)
 
             new_cargo, new_rocket = unload(cargo, rocket, to_location)
-            new_cargo.set_action(action)
-            new_rocket.set_action(action)
+            new_cargo.add_action(action)
+            new_rocket.add_action(action)
 
-            list_to_apply.add(new_cargo)
-            list_to_apply.add(new_cargo)
+            add(new_rocket, list_to_apply)
+            add(new_cargo, list_to_apply)
 
             return (rocket, cargo)
+
+
+def add(object, list_to_apply):
+    added = False
+    for obj in list_to_apply:
+        if isinstance(object, CARGO):
+            if isinstance(obj, CARGO) and obj.action:
+                if obj.name == object.name and obj.location == object.location:
+                    for action in object.action:
+                        obj.add_action(action)
+                        added = True
+                    break
+
+        if isinstance(object, ROCKET):
+            if isinstance(obj, ROCKET) and obj.action:
+                if obj.name == object.name and obj.location == object.location and obj.has_fuel == object.has_fuel and obj.cargo == object.cargo:
+                    for action in object.action:
+                        obj.add_action(action)
+                        added = True
+                    break
+    if not added:
+        list_to_apply.add(object)

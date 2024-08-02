@@ -1,7 +1,10 @@
 class Fact:
-    def __init__(self, name, action):
+    def __init__(self, name):
         self.name = name
-        self.action = action
+        self.action = set()
+
+    def add_action(self, action):
+        self.action.add(action)
 
 class Action:
     def __init__(self, operator, params):
