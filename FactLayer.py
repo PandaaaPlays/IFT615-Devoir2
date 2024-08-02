@@ -2,7 +2,7 @@ from ActionLayer import CARGO, ROCKET
 from Operators import move, load, unload
 from Utils import find_with_obj
 
-
+# Creation d'une fact layer en se basant sur la precedente
 def create_fact_layer(action_layer, facts):
     fact_layer = set(facts)
     for action in action_layer:
@@ -10,6 +10,7 @@ def create_fact_layer(action_layer, facts):
 
     return fact_layer
 
+# Appliquer les effets des actions sur les facts et les ajouter dans la liste
 def apply_effects(action, facts, list_to_apply):
     params = action.params
     match action.operator.name:
@@ -78,6 +79,7 @@ def apply_effects(action, facts, list_to_apply):
             return (rocket, cargo)
 
 
+# Ajout dans la list, ou simplement ajout de l'action si deja dans la liste
 def add(object, list_to_apply):
     added = False
     for obj in list_to_apply:

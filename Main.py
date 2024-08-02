@@ -9,12 +9,12 @@ from Utils import find_in_list, read_lines
 
 def check_params(op_params, params):
     if len(op_params) != len(params):
-        raise ValueError("Number of parameters given do not match the number of operator parameters")
+        raise ValueError("Le nombre de parametres donné n'est pas le bon selon le nombre d'opérateurs.")
     list = []
 
     for op_param, param in zip(op_params, params):
         if not isinstance(param, eval(op_param.type)):
-            raise ValueError(f"Parameter {param.name} does not match the expected type {op_param.type}")
+            raise ValueError(f"Parametre {param.name} ne match pas le type attendu : {op_param.type}")
         else:
             list.append(VariablePair(op_param, param))
 
@@ -106,16 +106,6 @@ def graphplan(r_ops_file, r_facts_file):
         counter += 1
         operators.append(op)
 
-    #print("Facts:")
-    #for fact in facts:
-     #   print("Name: " + fact.name)
-      #  if isinstance(fact, OBJECT):
-       #     print("Location: " + fact.location.name)
-        #if isinstance(fact, ROCKET):
-         #   print("Has fuel: " + str(fact.has_fuel))
-        #if isinstance(fact, CARGO):
-         #   print("Destination: " + fact.destination.name)
-
     return DoPlan(operators, facts)
 
 def DoPlan(operators, facts):
@@ -184,7 +174,7 @@ def main():
     args = parser.parse_args()
 
     optimal_plan = graphplan(args.r_ops, args.r_facts)
-    print("Optimal Plan:")
+    print("Plan optimal:")
     for step in optimal_plan:
         print(step.name)
 

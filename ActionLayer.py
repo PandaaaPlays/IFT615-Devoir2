@@ -57,7 +57,7 @@ class ROCKET(OBJECT):
 
 def create_action_layer(fact_layer, operators):
     action_layer = []
-    mutex_actions = set()  # Change variable name to avoid conflict with the set of actions
+    mutex_actions = set()
 
     for operator in operators:
         possible_params = [
@@ -72,7 +72,6 @@ def create_action_layer(fact_layer, operators):
                 action = Action(operator, param_dict)
                 print(action.operator.name)
 
-                # Check for mutex with existing actions
                 for existing_action in action_layer:
                     if are_actions_mutex(action, existing_action):
                         mutex_actions.add((action, existing_action))
@@ -81,13 +80,12 @@ def create_action_layer(fact_layer, operators):
 
     print("Mutex Actions:")
     for action1, action2 in mutex_actions:
-        print(f"Action: {action1.operator.name} has mutex with: {action2.operator.name}")
+        print(f"Action: {action1.operator.name} a un mutex avec {action2.operator.name}")
 
     return action_layer, mutex_actions
 
+# Si 2 actions sont mutuellement exclusives, elles sont de la même instance (check les param) et ont les mêmes "facts"
 def are_actions_mutex(action1, action2):
-    # Check if actions conflict based on their effects
-    # This assumes that if two actions affect the same cargo or rocket, they are mutex
     for param1, fact1 in action1.params.items():
         for param2, fact2 in action2.params.items():
             if isinstance(fact1, CARGO) and isinstance(fact2, CARGO) and fact1 == fact2:
@@ -96,8 +94,8 @@ def are_actions_mutex(action1, action2):
                 return True
     return False
 
+# Les preconditions sont satisfaites ou non?
 def preconditions_satisfied(operator, param_dict):
-    # Create a list of VariablePairs from the param_dict
     params_list = [VariablePair(param, param_dict[param.name]) for param in operator.params]
 
     for precond in operator.preconds:
@@ -106,6 +104,7 @@ def preconditions_satisfied(operator, param_dict):
     return True
 
 
+# Condition de preconditions (pour qu'elle soient OK)
 def check_precond(op_precond, params):
     match op_precond.operand:
         case 'at':
