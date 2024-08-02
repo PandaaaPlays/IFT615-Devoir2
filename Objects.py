@@ -1,7 +1,7 @@
 class Fact:
     def __init__(self, name):
         self.name = name
-
+        self.parent = None
 
 class Operator:
     def __init__(self, name):

@@ -3,6 +3,7 @@ import re
 
 import ActionLayer
 from ActionLayer import create_action_layer, ROCKET, CARGO, PLACE
+from ExtractPlan import extract_plan
 from FactLayer import create_fact_layer
 from Objects import VariablePair, Operator, Parameter, Precondition, Effect
 from Utils import find_with_variable, find_in_list, read_lines
@@ -124,20 +125,20 @@ def DoPlan(operators, facts):
     # Implement the Graphplan algorithm to find the optimal plan
     # 1. Initialize the planning graph with initial facts
     initial_state = facts
-    planning_graph = [list(initial_state)]
+    fact_graph = [list(initial_state)]
+    action_graph = []
     goals = [(fact, fact.destination) for fact in facts if isinstance(fact, CARGO) and fact.destination]
 
     plan = []
-    no_solution = False
     i = 0
 
     # 2. Expand the graph by alternating between action and fact layers
-    while not goals_satisfied(goals, planning_graph[i]):
+    while not goals_satisfied(goals, fact_graph[i]) and i < 3:
         print(f"\nIteration {i} :")
 
         print(f"Facts:")
-        for fact in planning_graph[i]:
-            print(f" - {fact.name}")
+        for fact in fact_graph[i]:
+            print(f" - {fact.name} ({fact})")
             if isinstance(fact, ActionLayer.OBJECT):
                 print(f"   Location: {fact.location.name if fact.location else 'None'}")
             if isinstance(fact, ROCKET):
@@ -146,30 +147,21 @@ def DoPlan(operators, facts):
             if isinstance(fact, CARGO):
                 print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
 
-        # Printing actual facts
-        # print(f"Facts:")
-        # for fact in planning_graph[i]:
-        #    print(f" - {fact.name}")
 
         # Create action layer
-        action_layer = create_action_layer(planning_graph[i], operators)
-
-        # Printing actions
-        # for action, params in action_layer:
-        #    print(f"Action: {action.name}")
-        #    for param_name, fact in params.items():
-        #        print(f"  {param_name}: {fact.name} (Type: {type(fact).__name__})")
+        action_layer = create_action_layer(fact_graph[i], operators)
+        action_graph.append(action_layer)
 
         # Create fact layer
-        fact_layer = create_fact_layer(action_layer, planning_graph[i])
-        planning_graph.append(fact_layer)
+        fact_layer = create_fact_layer(action_graph[-1], fact_graph[-1])
+        fact_graph.append(fact_layer)
+
 
         i += 1
 
-    # 3. Check for goal reachability and extract the plan
-    #plan = extract_plan(planning_graph, goals, operators)
-    return plan
+   # plan = extract_plan(fact_graph, action_graph, goals)
 
+    return plan
 
 def goals_satisfied(goals, graph):
     cargo_dict = {cargo.name: False for cargo, destination in goals}
@@ -178,25 +170,8 @@ def goals_satisfied(goals, graph):
         if isinstance(obj, ActionLayer.CARGO) and obj.destination == obj.location:
             cargo_dict[obj.name] = True
 
-    #print(cargo_dict)
-
     return all(cargo_dict.values())
 
-
-def extract_plan(planning_graph, goals, operators):
-    # Extract a plan from the planning graph by backtracking from the goals
-    plan = []
-    for i in range(len(planning_graph) - 1, 0, -2):
-        action_layer = planning_graph[i - 1]
-        fact_layer = planning_graph[i]
-
-        for goal in goals:
-            for action in action_layer:
-                if any(effect.operand == 'at' and effect.object_types[0].strip('()') == goal[0].name and
-                       effect.object_types[1].strip('()') == goal[1].name for effect in action.effects):
-                    plan.append(action)
-                    break
-    return plan
 
 def main():
     parser = argparse.ArgumentParser(description='Planificateur de tâches utilisant l\'algorithme Graphplan')

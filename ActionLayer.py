@@ -25,7 +25,7 @@ class CARGO(OBJECT):
     def set_destination(self, destination):
         self.destination = destination
 
-    def __copy__(self):
+    def copy(self):
         new_cargo = CARGO(self.name)
         new_cargo.destination = self.destination
         new_cargo.location = self.location
@@ -47,9 +47,9 @@ class ROCKET(OBJECT):
     def remove_cargo(self, cargo):
         self.cargo.discard(cargo)
 
-    def __copy__(self):
+    def copy(self):
         new_rocket = ROCKET(self.name)
-        new_rocket.cargo = self.cargo
+        new_rocket.cargo = set(self.cargo)
         new_rocket.set_location(self.location)
         new_rocket.set_has_fuel(self.has_fuel)
         return new_rocket
