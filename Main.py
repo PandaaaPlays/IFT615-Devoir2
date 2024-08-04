@@ -1,8 +1,10 @@
 import argparse
 import re
+from audioop import reverse
 
 import ActionLayer
 from ActionLayer import create_action_layer, ROCKET, CARGO, PLACE
+from ExtractPlan import extract_plan
 from FactLayer import create_fact_layer
 from Objects import VariablePair, Operator, Parameter, Precondition, Effect
 from Utils import find_in_list, read_lines
@@ -140,18 +142,24 @@ def DoPlan(operators, facts):
                     for action in fact.action:
                         print(f"    - {action}")
 
-        # Create action layer
+        # Créer l'action layer
         action_layer, mutex_action = create_action_layer(fact_graph[i], operators)
         action_graph.append(action_layer)
         mutex_actions.append(mutex_action)
 
-        # Create fact layer
+        # Créer la fact layer
         fact_layer = create_fact_layer(action_graph[-1], fact_graph[-1])
         fact_graph.append(fact_layer)
 
         i += 1
 
-    #plan = extract_plan(fact_graph, action_graph, goals)
+    # Extraire la solution
+    goal_facts = set()
+    for fact in fact_graph[-1]:
+        if isinstance(fact, CARGO):
+            if fact.location and fact.location.name == fact.destination.name:
+                goal_facts.add(fact)
+    plan = extract_plan(fact_graph, goal_facts)
 
     return plan
 
@@ -173,10 +181,10 @@ def main():
 
     args = parser.parse_args()
 
-    optimal_plan = graphplan(args.r_ops, args.r_facts)
+    optimal_plan = reversed(graphplan(args.r_ops, args.r_facts))
     print("Plan optimal:")
     for step in optimal_plan:
-        print(step.name)
+        print(step.operator.name)
 
 if __name__ == "__main__":
     main()

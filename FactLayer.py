@@ -27,12 +27,13 @@ def apply_effects(action, facts, list_to_apply):
             obj = params[type]
             location_from = find_with_obj(facts, obj)
 
+            new_rocket = None
             if location_from.name != location_to.name:
                 new_rocket = move(rocket, location_to, location_from)
                 new_rocket.add_action(action)
                 add(new_rocket, list_to_apply)
 
-            return rocket
+            return new_rocket
 
         case 'LOAD':
             type = action.operator.effects[0].object_types[0].strip('()')
@@ -54,7 +55,7 @@ def apply_effects(action, facts, list_to_apply):
             add(new_rocket, list_to_apply)
             add(new_cargo, list_to_apply)
 
-            return (rocket, cargo)
+            return (new_rocket, new_cargo)
 
         case 'UNLOAD':
             type = action.operator.effects[0].object_types[0].strip('()')
@@ -76,7 +77,7 @@ def apply_effects(action, facts, list_to_apply):
             add(new_rocket, list_to_apply)
             add(new_cargo, list_to_apply)
 
-            return (rocket, cargo)
+            return (new_rocket, new_cargo)
 
 
 # Ajout dans la list, ou simplement ajout de l'action si deja dans la liste
