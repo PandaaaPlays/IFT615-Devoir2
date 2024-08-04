@@ -59,6 +59,8 @@ def create_action_layer(fact_layer, operators):
     action_layer = []
     mutex_actions = set()
 
+    print("Actions possible a cette iteration: ")
+
     for operator in operators:
         possible_params = [
             [fact for fact in fact_layer if isinstance(fact, eval(param.type))]
@@ -70,7 +72,7 @@ def create_action_layer(fact_layer, operators):
 
             if preconditions_satisfied(operator, param_dict):
                 action = Action(operator, param_dict)
-                print(action.operator.name)
+                print(f" - {action.operator.name}")
 
                 for existing_action in action_layer:
                     if are_actions_mutex(action, existing_action):
@@ -80,7 +82,7 @@ def create_action_layer(fact_layer, operators):
 
     print("Mutex Actions:")
     for action1, action2 in mutex_actions:
-        print(f"Action: {action1.operator.name} a un mutex avec {action2.operator.name}")
+        print(f" - {action1.operator.name} a un mutex avec {action2.operator.name}")
 
     return action_layer, mutex_actions
 

@@ -113,15 +113,15 @@ def graphplan(r_ops_file, r_facts_file):
 def DoPlan(operators, facts):
     initial_state = facts
     fact_graph = [list(initial_state)]
-    action_graph = []
     goals = [(fact, fact.destination) for fact in facts if isinstance(fact, CARGO) and fact.destination]
-
-    plan = []
+    action_graph = []
     mutex_actions = []
     i = 0
 
     while not goals_satisfied(goals, fact_graph[i]):
-        print(f"\nIteration {i} :")
+        print("\n==================================")
+        print(f"Facts présent a l'iteration {i} :")
+        print("==================================")
 
         print(f"Facts:")
         for fact in fact_graph[i]:
@@ -131,13 +131,13 @@ def DoPlan(operators, facts):
             if isinstance(fact, ROCKET):
                 print(f"   Has fuel: {fact.has_fuel}")
                 print(f"   Cargos: {fact.cargo}")
-                print(f"   Actions: ")
+                print(f"   Actions menant a cette rocket: ")
                 if fact.action:
                     for action in fact.action:
                         print(f"    - {action}")
             if isinstance(fact, CARGO):
                 print(f"   Destination: {fact.destination.name if fact.destination else 'None'}")
-                print(f"   Actions: ")
+                print(f"   Actions menant a ce cargo: ")
                 if fact.action:
                     for action in fact.action:
                         print(f"    - {action}")

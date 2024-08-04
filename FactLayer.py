@@ -5,6 +5,7 @@ from Utils import find_with_obj
 # Creation d'une fact layer en se basant sur la precedente
 def create_fact_layer(action_layer, facts):
     fact_layer = set(facts)
+    print("Appliquer les effets des actions suivantes:")
     for action in action_layer:
         apply_effects(action, facts, fact_layer)
 
